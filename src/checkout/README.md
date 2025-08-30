@@ -1,5 +1,5 @@
 # AWS Containers Retail Sample - Checkout Service
-<!-- Test commit for testing purpose - v2 -->
+<!-- Test commit for testing purpose - v3 -->
 
 | Language | Persistence |
 | -------- | ----------- |
