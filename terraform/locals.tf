@@ -33,7 +33,7 @@ locals {
     ManagedBy     = "terraform"
     CreatedBy     = "TrainWithShubhamCommunity"
     Owner         = data.aws_caller_identity.current.user_id
-    CreatedDate   = formatdate("YYYY-MM-DD", timestamp())
+    CreatedDate   = "2025-08-27"
   }
   
   # Kubernetes subnet tags

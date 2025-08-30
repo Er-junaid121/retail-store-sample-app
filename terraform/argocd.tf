@@ -98,24 +98,239 @@ resource "time_sleep" "wait_for_argocd" {
 }
 
 # =============================================================================
-# DEPLOY ARGOCD APPLICATIONS
+# DEPLOY ARGOCD APPLICATIONS USING KUBERNETES PROVIDER
 # =============================================================================
 
-resource "null_resource" "argocd_apps" {
+# Create retail-store namespace
+resource "kubernetes_namespace" "retail_store" {
+  metadata {
+    name = "retail-store"
+  }
   depends_on = [time_sleep.wait_for_argocd]
-  
-  provisioner "local-exec" {
-    command = <<-EOT
-      echo "Deploying ArgoCD projects and applications..."
-      kubectl apply -n ${var.argocd_namespace} -f ${path.module}/../argocd/projects/
-      kubectl apply -n ${var.argocd_namespace} -f ${path.module}/../argocd/applications/
-      echo "ArgoCD applications deployed successfully!"
-    EOT
+}
+
+# Deploy ArgoCD Project
+resource "kubernetes_manifest" "retail_store_project" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "AppProject"
+    metadata = {
+      name      = "retail-store"
+      namespace = var.argocd_namespace
+    }
+    spec = {
+      description = "Retail Store Sample Application"
+      sourceRepos = [
+        "https://github.com/LondheShubham153/retail-store-sample-app"
+      ]
+      destinations = [{
+        namespace = "retail-store"
+        server    = "https://kubernetes.default.svc"
+      }]
+      clusterResourceWhitelist = [
+        { group = "", kind = "Namespace" },
+        { group = "rbac.authorization.k8s.io", kind = "ClusterRole" },
+        { group = "rbac.authorization.k8s.io", kind = "ClusterRoleBinding" },
+        { group = "cert-manager.io", kind = "ClusterIssuer" }
+      ]
+      namespaceResourceWhitelist = [
+        { group = "", kind = "ConfigMap" },
+        { group = "", kind = "Secret" },
+        { group = "", kind = "Service" },
+        { group = "", kind = "ServiceAccount" },
+        { group = "apps", kind = "Deployment" },
+        { group = "apps", kind = "StatefulSet" },
+        { group = "networking.k8s.io", kind = "Ingress" },
+        { group = "autoscaling", kind = "HorizontalPodAutoscaler" },
+        { group = "policy", kind = "PodDisruptionBudget" }
+      ]
+    }
   }
-  
-  # Trigger re-deployment if ArgoCD configuration changes
-  triggers = {
-    argocd_version = var.argocd_chart_version
-    timestamp      = timestamp()
+  depends_on = [time_sleep.wait_for_argocd]
+}
+
+# Deploy ArgoCD Applications
+resource "kubernetes_manifest" "retail_store_ui" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "retail-store-ui"
+      namespace = var.argocd_namespace
+      annotations = {
+        "argocd.argoproj.io/sync-wave" = "2"
+      }
+    }
+    spec = {
+      project = "retail-store"
+      source = {
+        repoURL        = "https://github.com/LondheShubham153/retail-store-sample-app"
+        targetRevision = "main"
+        path           = "src/ui/chart"
+        helm = {
+          valueFiles = ["values.yaml"]
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "retail-store"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
   }
+  depends_on = [kubernetes_manifest.retail_store_project, kubernetes_namespace.retail_store]
+}
+
+resource "kubernetes_manifest" "retail_store_cart" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "retail-store-cart"
+      namespace = var.argocd_namespace
+      annotations = {
+        "argocd.argoproj.io/sync-wave" = "1"
+      }
+    }
+    spec = {
+      project = "retail-store"
+      source = {
+        repoURL        = "https://github.com/LondheShubham153/retail-store-sample-app"
+        targetRevision = "main"
+        path           = "src/cart/chart"
+        helm = {
+          valueFiles = ["values.yaml"]
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "retail-store"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
+  }
+  depends_on = [kubernetes_manifest.retail_store_project, kubernetes_namespace.retail_store]
+}
+
+resource "kubernetes_manifest" "retail_store_catalog" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "retail-store-catalog"
+      namespace = var.argocd_namespace
+      annotations = {
+        "argocd.argoproj.io/sync-wave" = "1"
+      }
+    }
+    spec = {
+      project = "retail-store"
+      source = {
+        repoURL        = "https://github.com/LondheShubham153/retail-store-sample-app"
+        targetRevision = "main"
+        path           = "src/catalog/chart"
+        helm = {
+          valueFiles = ["values.yaml"]
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "retail-store"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
+  }
+  depends_on = [kubernetes_manifest.retail_store_project, kubernetes_namespace.retail_store]
+}
+
+resource "kubernetes_manifest" "retail_store_checkout" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "retail-store-checkout"
+      namespace = var.argocd_namespace
+      annotations = {
+        "argocd.argoproj.io/sync-wave" = "1"
+      }
+    }
+    spec = {
+      project = "retail-store"
+      source = {
+        repoURL        = "https://github.com/LondheShubham153/retail-store-sample-app"
+        targetRevision = "main"
+        path           = "src/checkout/chart"
+        helm = {
+          valueFiles = ["values.yaml"]
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "retail-store"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
+  }
+  depends_on = [kubernetes_manifest.retail_store_project, kubernetes_namespace.retail_store]
+}
+
+resource "kubernetes_manifest" "retail_store_orders" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "retail-store-orders"
+      namespace = var.argocd_namespace
+      annotations = {
+        "argocd.argoproj.io/sync-wave" = "1"
+      }
+    }
+    spec = {
+      project = "retail-store"
+      source = {
+        repoURL        = "https://github.com/LondheShubham153/retail-store-sample-app"
+        targetRevision = "main"
+        path           = "src/orders/chart"
+        helm = {
+          valueFiles = ["values.yaml"]
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "retail-store"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
+  }
+  depends_on = [kubernetes_manifest.retail_store_project, kubernetes_namespace.retail_store]
 }

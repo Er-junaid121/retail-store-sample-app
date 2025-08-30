@@ -5,7 +5,7 @@
 variable "aws_region" {
   description = "AWS region where resources will be created"
   type        = string
-  default     = "us-west-2"
+  default     = "ap-south-1"
 }
 
 variable "cluster_name" {
@@ -23,7 +23,7 @@ variable "environment" {
 variable "kubernetes_version" {
   description = "Kubernetes version for EKS cluster"
   type        = string
-  default     = "1.33"
+  default     = "1.31"
 }
 
 variable "vpc_cidr" {
