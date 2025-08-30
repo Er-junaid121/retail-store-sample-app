@@ -2,7 +2,7 @@
 
 <!-- GitOps Test: Testing deploy-simple.yml workflow -->
 
-<!-- Test commit: Trigger CI/CD for all services -->
+<!-- Test commit: Trigger CI/CD for all services - v2 -->
 
 | Language | Persistence |
 | -------- | ----------- |
