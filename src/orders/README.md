@@ -1,6 +1,6 @@
 # AWS Containers Retail Sample - Orders Service..
 
-<!-- Test commit -->..
+<!-- Test commit for testing purpose -->
 
 | Language | Persistence |
 | -------- | ----------- |
